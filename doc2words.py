@@ -1,3 +1,4 @@
+# coding: utf8
 import re
 
 SPLIT_RGX = re.compile(r'\w+', re.U)

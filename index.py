@@ -3,6 +3,7 @@ from docreader import DocumentStreamReader
 from docreader import parse_command_line
 from doc2words import extract_words
 import struct
+import pickle as pkl
 
 def make_dictionary_urlid():
     id_url = {}
@@ -10,7 +11,7 @@ def make_dictionary_urlid():
     reader = DocumentStreamReader(parse_command_line().files)
     i = 0
     for doc in reader:
-        id_url[i] = doc.url
+        id_url[str(i)] = doc.url
         for word in extract_words(doc.text):
             if not (word in term_doc):
                 term_doc[word] = []
@@ -97,9 +98,9 @@ def to_varbyte_to_file(dictionary, filename):
 def store_dict( dictionary, file):
     with open(file, 'w') as f:
         for item in dictionary.items():
-            f.write(item[0])
+            f.write(item[0].encode('utf-8'))
             for elem in item[1]:
-                f.write(' ' + str(elem))
+                f.write(' '+(str(elem)).encode('utf-8'))
             f.write('\n')
 
 def load_dict(file):
@@ -116,15 +117,13 @@ def load_dict(file):
 
 
 
-def find_docid_by_term( terms ,term_offset_size, indexfile):
+def find_docid_by_term( terms ,term_offset_size, index):
     term_docid = {}
-    with open(indexfile, 'r') as f:
-        a = bytearray(f.read())
     for term in terms:
         if (term_offset_size.get(term) != None):
             start = term_offset_size[term][0]
             end = term_offset_size[term][1] + start
-            term_docid[term] = varbyte_to_int(a[start:end])
+            term_docid[term] = varbyte_to_int(index[start:end])
         else :
             term_docid[term] = []
     return term_docid
@@ -210,10 +209,13 @@ def intersect( listdoc1, listdoc2):
             idx1 += 1
     return listintersect
 
-def find_easy_request(request, fileindex, term_offset_size):
-    terms = request.split('&')
-    term_docid = find_docid_by_term(terms, term_offset_size, fileindex)
+def find_easy_request(request, index, term_offset_size):
+    terms = map(lambda s: s.strip(), request.decode('utf-8').lower().split('&'))
+    #print terms
+    term_docid = find_docid_by_term(terms, term_offset_size, index)
+    #print term_docid
     term_docid = uncompress(term_docid)
+    #print term_docid
     answer = []
 
     firsttime = True
@@ -274,5 +276,7 @@ print answer
 
 if __name__ == '__main__':
     term_doc, id_url = make_dictionary_urlid()
-    store_dict(term_doc, 'index')
-    store_dict(id_url, 'Docid_url')
+    with open('index', 'w') as f:
+        pkl.dump(term_doc, f)
+    with open('docid_url', 'w') as f:
+        pkl.dump(id_url, f)

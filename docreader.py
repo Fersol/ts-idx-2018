@@ -30,6 +30,7 @@ class DocumentStreamReader:
 
 def parse_command_line():
     parser = argparse.ArgumentParser(description='compressed documents reader')
+    parser.add_argument('zip')
     parser.add_argument('files', nargs='+', help='Input files (.gz or plain) to process')
     return parser.parse_args()
 
